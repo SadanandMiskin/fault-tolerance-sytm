@@ -1,0 +1,11 @@
+:80 {
+    # Caddy automatically load balances between these two
+    # It will re-resolve 'app1' and 'app2' if they restart
+    reverse_proxy app1:5000 app2:5000 {
+        lb_policy round_robin
+        
+        # Passive health checks (removes a failed node for 30s)
+        fail_duration 30s
+        max_fails 3
+    }
+}
