@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_cont
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - simple_flask_app
+    depends_on:
+      app1:
+        condition: service_healthy
+      app2:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: flask_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d flask_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - simple_flask_app
+
+  app1:
+    image: server-app
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-app1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5001:5000"
+    networks:
+      - simple_flask_app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5s 
+      timeout: 5s
+      retries: 3
+      # start_period: 10s
+
+  app2:
+    image: server-app
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-app2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5002:5000"
+    networks:
+      - simple_flask_app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  simple_flask_app:
+      external: true
+    # driver: bridge
