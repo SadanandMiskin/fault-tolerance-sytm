@@ -8,4 +8,8 @@
         fail_duration 30s
         max_fails 3
     }
+    log {
+        output stdout
+        format json
+    }
 }
